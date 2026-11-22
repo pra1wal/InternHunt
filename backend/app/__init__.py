@@ -1,0 +1,1 @@
+"""InternHunt backend application package."""

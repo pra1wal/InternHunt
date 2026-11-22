@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InternHunt</title>
 
-<link rel="icon" href="/assets/logo.png" rel="stylesheet">
+<link rel="icon" href="/assets/logo.png">
 
 <style>
 :root {
@@ -307,6 +307,54 @@ footer {
     margin: 20px 5% 50px;
   }
 }
+
+
+/* JOB SEARCH */
+.search-main {
+  min-height: calc(100vh - 150px);
+  padding: 70px 7% 90px;
+  background: linear-gradient(180deg, var(--surface), var(--bg) 38%);
+}
+.search-heading { max-width: 760px; margin: 0 auto 32px; text-align: center; }
+.search-heading .tag { margin-bottom: 18px; }
+.search-heading h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.12; letter-spacing: -2px; margin-bottom: 15px; }
+.search-heading h1 span { color: var(--orange); }
+.search-heading p { color: var(--muted); line-height: 1.7; }
+.search-panel {
+  max-width: 1050px; margin: 0 auto 28px; padding: 22px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+}
+.search-grid { display: grid; grid-template-columns: 2fr 1.3fr 1fr 1.15fr auto; gap: 12px; }
+.search-field label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 7px 2px; }
+.search-field input, .search-field select {
+  width: 100%; min-height: 45px; padding: 10px 12px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit;
+}
+.search-field input:focus, .search-field select:focus { outline: 2px solid var(--orange); outline-offset: 1px; }
+.search-submit { align-self: end; min-height: 45px; white-space: nowrap; }
+.search-meta { max-width: 1050px; margin: 0 auto 14px; display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
+.jobs-grid { max-width: 1050px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.job-card { padding: 22px; border: 1px solid var(--border); background: var(--card); border-radius: 14px; transition: .2s; }
+.job-card:hover { border-color: var(--orange); transform: translateY(-3px); }
+.job-card h2 { font-size: 18px; margin-bottom: 7px; }
+.job-company { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.job-badges { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
+.job-badge { background: var(--soft); color: var(--orange); padding: 6px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.job-description { color: var(--muted); line-height: 1.65; font-size: 13px; margin-bottom: 15px; }
+.job-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 17px; }
+.job-skill { border: 1px solid var(--border); color: var(--muted); padding: 5px 8px; border-radius: 6px; font-size: 11px; }
+.job-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; }
+.job-card-footer small { color: var(--muted); }
+.empty-state { grid-column: 1 / -1; background: var(--card); border: 1px dashed var(--border); border-radius: 14px; padding: 36px 20px; text-align: center; color: var(--muted); }
+.feed-notice { max-width: 1050px; margin: 20px auto 0; border-radius: 10px; background: var(--soft); padding: 12px 15px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+@media(max-width: 900px) { .search-grid { grid-template-columns: 1fr 1fr; } }
+@media(max-width: 650px) {
+  .search-main { padding: 55px 5% 70px; }
+  .search-grid, .jobs-grid { grid-template-columns: 1fr; }
+  .search-submit { width: 100%; }
+  .search-meta { flex-direction: column; }
+}
+
 </style>
 </head>
 
@@ -334,10 +382,59 @@ footer {
       🌙
     </button>
 
-    <a href="#start" class="btn">Get Started →</a>
+    <a href="#jobSearchForm" class="btn">Get Started →</a>
 
   </div>
 </nav>
+
+
+<main class="search-main">
+  <header class="search-heading">
+    <div class="tag">OPPORTUNITIES IN INDIA</div>
+    <h1>Find your next <span>opportunity.</span></h1>
+    <p>Search internships and full-time roles by title, skills or city.</p>
+  </header>
+
+  <form class="search-panel" id="jobSearchForm">
+    <div class="search-grid">
+      <div class="search-field">
+        <label for="jobQuery">Role or skills</label>
+        <input id="jobQuery" name="q" type="search" placeholder="e.g. Python, frontend developer">
+      </div>
+      <div class="search-field">
+        <label for="jobLocation">City</label>
+        <input id="jobLocation" name="location" type="text" placeholder="e.g. Bengaluru">
+      </div>
+      <div class="search-field">
+        <label for="jobType">Job type</label>
+        <select id="jobType" name="type">
+          <option value="all">All opportunities</option>
+          <option value="internship">Internships</option>
+          <option value="full-time">Full-time</option>
+        </select>
+      </div>
+      <div class="search-field">
+        <label for="jobSource">Job source</label>
+        <select id="jobSource" name="source">
+          <option value="all">All connected sources</option>
+          <option value="jobvetta">Jobvetta</option>
+          <option value="indianapi">Indian API</option>
+          <option value="adzuna">Adzuna</option>
+          <option value="greenhouse">Greenhouse boards</option>
+          <option value="lever">Lever boards</option>
+        </select>
+      </div>
+      <button class="btn search-submit" type="submit">Search jobs →</button>
+    </div>
+  </form>
+
+  <div class="search-meta">
+    <span id="resultCount">Loading opportunities...</span>
+    <span id="searchStatus" role="status" aria-live="polite"></span>
+  </div>
+  <section class="jobs-grid" id="jobsGrid" aria-live="polite"></section>
+  <p class="feed-notice" id="feedNotice">Search across Jobvetta, Indian API, Adzuna and optional company career-board feeds. Only configured providers return live listings; sample data is clearly labelled.</p>
+</main>
 
 <footer>
   © 2026 InternHunt. Find. Apply. Get Hired.
@@ -375,5 +472,6 @@ footer {
   }
 </script>
 
+<script src="js/jobs.js" defer></script>
 </body>
 </html>

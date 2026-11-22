@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InternHunt</title>
 
-<link rel="icon" href="/assets/logo.png" rel="stylesheet">
+<link rel="icon" href="/assets/logo.png" type="image/png">
 
 <style>
 :root {
@@ -117,18 +117,6 @@ nav {
   transition: .2s;
 }
 
-.tab2{
-    background: var(--orange);
-  color: white;
-  padding: 13px 22px;
-  border-radius: 9px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  display: inline-block;
-  transition: .2s;
-}
-
 .btn:hover {
   background: #D84315;
   transform: translateY(-2px);
@@ -191,6 +179,8 @@ nav {
 .features {
   padding: 75px 8%;
   text-align: center;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .features h2 {
@@ -208,6 +198,7 @@ nav {
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
   text-align: left;
+  align-items: center;
 }
 
 .feature-card {
@@ -216,6 +207,7 @@ nav {
   border: 1px solid var(--border);
   border-radius: 15px;
   transition: .2s;
+  align-items: center;
 }
 
 .feature-card:hover {
@@ -314,12 +306,12 @@ footer {
 <body>
 
 <nav>
-  <a href="index.html" class="logo">
+  <a href="#" class="logo">
     Intern<span>Hunt</span>
   </a>
 
   <div class="nav-links">
-    <a href="check.html" class="tab2">Check Resume</a>
+    <a href="check.html">Check Resume</a>
     <a href="find.html">Search for Jobs/Internships</a>
     <a href="about.html">About</a>
   </div>
@@ -339,6 +331,61 @@ footer {
 
   </div>
 </nav>
+
+<section class="hero">
+  <div class="tag">YOUR CAREER, ON AUTOPILOT</div>
+
+  <h1>
+    Stop searching.<br>
+    <span>Start discovering.</span>
+  </h1>
+
+  <p>
+    Discover internships that match your skills,
+    interests and ambitions. Let InternHunt find
+    opportunities while you focus on your future.
+  </p>
+
+  <div class="hero-buttons">
+    <a href="#start" class="btn">Find My Internship →</a>
+    <a href="#features" class="secondary-btn">
+      Explore Features
+    </a>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <h2>Everything you need to get ahead.</h2>
+  <p>One platform. Better opportunities. Less searching.</p>
+
+  <div class="feature-grid">
+
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <h3>Smart Discovery</h3>
+      <p>
+        Find internship opportunities across
+        multiple platforms in one place.
+      </p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>Personalized Matching</h3>
+      <p>
+        Discover roles based on your skills,
+        interests and preferred domains.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<section class="cta" id="start">
+  <h2>Your next opportunity awaits.</h2>
+  <p>Let your internship hunt begin.</p>
+  <a href="#" class="btn">Get Started →</a>
+</section>
 
 <footer>
   © 2026 InternHunt. Find. Apply. Get Hired.
