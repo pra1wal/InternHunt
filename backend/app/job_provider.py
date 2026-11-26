@@ -45,27 +45,15 @@ def _csv_env(name: str) -> list[str]:
 
 
 def _is_configured(provider: str) -> bool:
-    if provider == "jobvetta":
-        return bool(os.getenv("JOBVETTA_API_KEY", "").strip())
     if provider == "indianapi":
         return bool(os.getenv("INDIANAPI_API_KEY", "").strip())
-    if provider == "adzuna":
-        return bool(os.getenv("ADZUNA_APP_ID", "").strip() and os.getenv("ADZUNA_APP_KEY", "").strip())
-    if provider == "greenhouse":
-        return bool(_csv_env("GREENHOUSE_BOARDS"))
-    if provider == "lever":
-        return bool(_csv_env("LEVER_SITES"))
     return False
 
 
 def provider_configuration() -> list[dict[str, Any]]:
     """Return provider configuration status without exposing credentials."""
     definitions = [
-        ("jobvetta", "Jobvetta", "JOBVETTA_API_KEY", "Aggregator"),
-        ("indianapi", "Indian API", "INDIANAPI_API_KEY", "India-focused aggregator"),
-        ("adzuna", "Adzuna", "ADZUNA_APP_ID + ADZUNA_APP_KEY", "India-market aggregator"),
-        ("greenhouse", "Greenhouse", "GREENHOUSE_BOARDS", "Configured company career boards"),
-        ("lever", "Lever", "LEVER_SITES", "Configured company career boards"),
+        ("indianapi", "Indian API", "INDIANAPI_API_KEY", "India-focused aggregator")
     ]
     return [
         {
@@ -115,7 +103,6 @@ _INDIA_LOCATIONS = {
 
 
 def is_india_listing(job: dict[str, Any]) -> bool:
-    """Conservative India-only filter for company ATS feeds with mixed locations."""
     country = str(job.get("country") or "").strip().upper()
     if country:
         return country in {"IN", "IND", "INDIA"}
@@ -253,47 +240,6 @@ def _type_query(q: str, selected_type: str) -> str:
     return query
 
 
-async def _jobvetta(q: str, location: str, selected_type: str, limit: int, days: int) -> list[dict[str, Any]]:
-    api_key = os.getenv("JOBVETTA_API_KEY", "").strip()
-    if not api_key:
-        return []
-    provider_query = _type_query(q, selected_type)
-    params: dict[str, Any] = {"days": days, "limit": min(limit, 10)}
-    if provider_query:
-        params["q"] = provider_query
-    if location:
-        params["location"] = location
-    cache_key = f"{provider_query.lower()}|{location.lower()}|{selected_type}|{days}|{limit}"
-
-    async def load() -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=22.0) as client:
-            payload = await _request_json(
-                client, "GET", "https://api.jobvetta.com/v1/jobs",
-                params=params,
-                headers={"Authorization": f"Bearer {api_key}"},
-            )
-        if not isinstance(payload, dict) or not isinstance(payload.get("jobs", []), list):
-            raise JobProviderError("Jobvetta returned an unexpected response format.")
-        result = []
-        for item in payload.get("jobs", []):
-            if not isinstance(item, dict):
-                continue
-            job = _normalize(
-                provider="Jobvetta",
-                provider_job_id=item.get("job_id") or item.get("id"),
-                title=item.get("title"), company=item.get("company"), location=item.get("location"),
-                employment_type=item.get("employment_type"), work_model=item.get("work_model"),
-                description=item.get("description"), skills=item.get("skills_required") or item.get("skills"),
-                apply_url=item.get("url") or item.get("apply_url"), source_url=item.get("url"),
-                posted_at=item.get("posted_at") or item.get("date_posted"),
-                country=item.get("country") or "India",
-            )
-            if is_india_listing(job):
-                result.append(job)
-        return result
-
-    return await _cached("jobvetta", cache_key, load)
-
 
 async def _indianapi(q: str, location: str, selected_type: str, limit: int) -> list[dict[str, Any]]:
     api_key = os.getenv("INDIANAPI_API_KEY", "").strip()
@@ -340,154 +286,10 @@ async def _indianapi(q: str, location: str, selected_type: str, limit: int) -> l
     return await _cached("indianapi", cache_key, load)
 
 
-async def _adzuna(q: str, location: str, selected_type: str, limit: int) -> list[dict[str, Any]]:
-    app_id = os.getenv("ADZUNA_APP_ID", "").strip()
-    app_key = os.getenv("ADZUNA_APP_KEY", "").strip()
-    if not app_id or not app_key:
-        return []
-    query = _type_query(q, selected_type)
-    cache_key = f"{query.lower()}|{location.lower()}|{selected_type}|{limit}"
-
-    async def load() -> list[dict[str, Any]]:
-        params: dict[str, Any] = {
-            "app_id": app_id,
-            "app_key": app_key,
-            "results_per_page": min(limit, MAX_PER_PROVIDER),
-            "content-type": "application/json",
-        }
-        if query:
-            params["what"] = query
-        if location:
-            params["where"] = location
-        async with httpx.AsyncClient(timeout=22.0) as client:
-            payload = await _request_json(
-                client, "GET", "https://api.adzuna.com/v1/api/jobs/in/search/1", params=params,
-                headers={"Accept": "application/json"},
-            )
-        records = payload.get("results", []) if isinstance(payload, dict) else []
-        if not isinstance(records, list):
-            raise JobProviderError("Adzuna returned an unexpected response format.")
-        result = []
-        for item in records:
-            if not isinstance(item, dict):
-                continue
-            location_obj = item.get("location") or {}
-            company_obj = item.get("company") or {}
-            category_obj = item.get("category") or {}
-            location_name = location_obj.get("display_name", "") if isinstance(location_obj, dict) else str(location_obj)
-            company_name = company_obj.get("display_name", "") if isinstance(company_obj, dict) else str(company_obj)
-            contract_time = item.get("contract_time") or ""
-            contract_type = item.get("contract_type") or ""
-            work_model = "Remote" if "remote" in (item.get("description", "") or "").lower() else ""
-            salary_parts = [item.get("salary_min"), item.get("salary_max")]
-            salary = None
-            if any(value is not None for value in salary_parts):
-                salary = {"min": salary_parts[0], "max": salary_parts[1], "currency": "INR"}
-            job = _normalize(
-                provider="Adzuna",
-                provider_job_id=item.get("id"), title=item.get("title"), company=company_name,
-                location=location_name, employment_type=f"{contract_time} {contract_type}",
-                work_model=work_model, description=item.get("description"),
-                apply_url=item.get("redirect_url"), source_url=item.get("redirect_url"),
-                posted_at=item.get("created"), country="India", salary=salary,
-            )
-            if is_india_listing(job):
-                result.append(job)
-        return result
-
-    return await _cached("adzuna", cache_key, load)
-
-
-async def _greenhouse(q: str, location: str, selected_type: str, limit: int) -> list[dict[str, Any]]:
-    boards = _csv_env("GREENHOUSE_BOARDS")
-    if not boards:
-        return []
-    results: list[dict[str, Any]] = []
-    async with httpx.AsyncClient(timeout=18.0) as client:
-        async def fetch_board(token: str) -> list[dict[str, Any]]:
-            payload = await _request_json(
-                client, "GET", f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs",
-                params={"content": "true"},
-            )
-            records = payload.get("jobs", []) if isinstance(payload, dict) else []
-            board_jobs = []
-            for item in records if isinstance(records, list) else []:
-                if not isinstance(item, dict):
-                    continue
-                loc = item.get("location") or {}
-                loc_name = loc.get("name", "") if isinstance(loc, dict) else str(loc)
-                departments = item.get("departments") or []
-                dept = ", ".join(d.get("name", "") for d in departments if isinstance(d, dict))
-                job = _normalize(
-                    provider="Greenhouse", provider_job_id=item.get("id"), title=item.get("title"),
-                    company=token.replace("-", " ").title(), location=loc_name,
-                    employment_type=item.get("employment_type") or "",
-                    description=item.get("content") or dept,
-                    apply_url=item.get("absolute_url"), source_url=item.get("absolute_url"),
-                    posted_at=item.get("updated_at"),
-                )
-                if is_india_listing(job):
-                    board_jobs.append(job)
-            return board_jobs
-
-        fetched = await asyncio.gather(*(fetch_board(token) for token in boards), return_exceptions=True)
-        for item in fetched:
-            if isinstance(item, list):
-                results.extend(item)
-            elif isinstance(item, Exception):
-                raise JobProviderError(f"A Greenhouse board could not be read: {item}")
-    return results[:limit]
-
-
-async def _lever(q: str, location: str, selected_type: str, limit: int) -> list[dict[str, Any]]:
-    sites = _csv_env("LEVER_SITES")
-    if not sites:
-        return []
-    results: list[dict[str, Any]] = []
-    async with httpx.AsyncClient(timeout=18.0) as client:
-        async def fetch_site(site: str) -> list[dict[str, Any]]:
-            payload = await _request_json(
-                client, "GET", f"https://api.lever.co/v0/postings/{site}", params={"mode": "json", "limit": 100},
-                headers={"Accept": "application/json"},
-            )
-            if not isinstance(payload, list):
-                raise JobProviderError("Lever returned an unexpected response format.")
-            site_jobs = []
-            for item in payload:
-                if not isinstance(item, dict):
-                    continue
-                categories = item.get("categories") or {}
-                categories = categories if isinstance(categories, dict) else {}
-                loc = categories.get("location") or ", ".join(categories.get("allLocations") or [])
-                country_code = item.get("country") or ""
-                job = _normalize(
-                    provider="Lever", provider_job_id=item.get("id"), title=item.get("text"),
-                    company=site.replace("-", " ").title(), location=loc,
-                    employment_type=categories.get("commitment") or "",
-                    work_model=item.get("workplaceType"),
-                    description=item.get("descriptionPlain") or item.get("openingPlain") or "",
-                    apply_url=item.get("applyUrl"), source_url=item.get("hostedUrl"),
-                    country=country_code,
-                )
-                if is_india_listing(job):
-                    site_jobs.append(job)
-            return site_jobs
-
-        fetched = await asyncio.gather(*(fetch_site(site) for site in sites), return_exceptions=True)
-        for item in fetched:
-            if isinstance(item, list):
-                results.extend(item)
-            elif isinstance(item, Exception):
-                raise JobProviderError(f"A Lever site could not be read: {item}")
-    return results[:limit]
 
 
 PROVIDER_NAMES = {
-    "jobvetta": "Jobvetta",
     "indianapi": "Indian API",
-    "adzuna": "Adzuna",
-    "greenhouse": "Greenhouse",
-    "lever": "Lever",
 }
 
 
@@ -502,7 +304,7 @@ async def search_all_providers(
     """Search all configured providers in parallel, merge and deduplicate India jobs."""
     source = (source or "all").strip().lower()
     if source not in {"all", *PROVIDER_NAMES.keys()}:
-        raise JobProviderError("Unknown source filter. Choose all, jobvetta, indianapi, adzuna, greenhouse or lever.")
+        raise JobProviderError("Unknown source filter. Choose all,  indianapi.")
 
     configured = [p for p in PROVIDER_NAMES if _is_configured(p) and (source == "all" or source == p)]
     not_configured = [p for p in PROVIDER_NAMES if not _is_configured(p) and (source == "all" or source == p)]
@@ -510,11 +312,7 @@ async def search_all_providers(
     all_jobs: list[dict[str, Any]] = []
 
     adapters: dict[str, Callable[[], Awaitable[list[dict[str, Any]]]]] = {
-        "jobvetta": lambda: _jobvetta(q, location, selected_type, min(limit, 10), days),
         "indianapi": lambda: _indianapi(q, location, selected_type, min(limit, 20)),
-        "adzuna": lambda: _adzuna(q, location, selected_type, min(limit, 20)),
-        "greenhouse": lambda: _greenhouse(q, location, selected_type, min(limit, 30)),
-        "lever": lambda: _lever(q, location, selected_type, min(limit, 30)),
     }
 
     async def run_provider(provider: str) -> tuple[str, Any]:
