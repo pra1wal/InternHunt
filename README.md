@@ -22,12 +22,7 @@ Open `backend/.env` and paste only the credentials you have. Leave the others bl
 
 ```env
 FRONTEND_ORIGINS=http://127.0.0.1:5500,http://localhost:5500
-JOBVETTA_API_KEY=your_jobvetta_key
 INDIANAPI_API_KEY=your_indianapi_key
-ADZUNA_APP_ID=your_adzuna_app_id
-ADZUNA_APP_KEY=your_adzuna_app_key
-GREENHOUSE_BOARDS=
-LEVER_SITES=
 JOB_CACHE_TTL_SECONDS=1800
 ```
 
